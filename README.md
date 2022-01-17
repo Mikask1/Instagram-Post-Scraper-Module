@@ -1,5 +1,5 @@
 # Instagram-Scraper
-Scrapes accounts that are accessible to the account.
+Uses selenium to scrape profiles that are accessible to the account
 
 ## Setup
 ### Install Dependencies
