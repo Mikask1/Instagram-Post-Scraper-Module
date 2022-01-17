@@ -12,20 +12,6 @@ import pickle
 import requests
 import json
 
-CHROMEDRIVER = "chromedriver.exe"
-HEADLESS = False
-
-opt = webdriver.ChromeOptions()
-opt.add_experimental_option('excludeSwitches', ['enable-logging'])
-if HEADLESS:
-    opt.add_argument("--headless")
-cookies = pickle.load(open("cookies.pkl", "rb"))
-driver = webdriver.Chrome(executable_path=CHROMEDRIVER, options=opt)
-driver.get("https://www.instagram.com/")
-for cookie in cookies:
-    driver.add_cookie(cookie)
-driver.refresh()
-
 class Post():
     '''
     This is a Post Class
@@ -74,20 +60,22 @@ class Profile():
     download : Downloads posts in a range
     '''
 
-    def __init__(self, query) -> None:
+    def __init__(self, query, driver) -> None:
         self.link = None
         self.exist = 1
+        self.driver = self.driver
+
         if query[:26] == "https://www.instagram.com/":
             self.link = query
         else:
-            search = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Search']")))
+            search = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Search']")))
             search.clear()
             search.send_keys(query)
 
             # Waits until the search bar finishes it's search
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@aria-hidden='false']")))
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@role='none']")))
-            results = driver.find_elements(By.XPATH, "//div[@role='none']")
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@aria-hidden='false']")))
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@role='none']")))
+            results = self.driver.find_elements(By.XPATH, "//div[@role='none']")
 
             index = 0
             if results: # if the search query returns anything
@@ -102,7 +90,7 @@ class Profile():
         
         if self.link:
             self.username = self.link[26:-1]
-            driver.get(self.link)
+            self.driver.get(self.link)
 
     def _load_profile(self, index) -> list:
         '''
@@ -113,10 +101,10 @@ class Profile():
         
         links = []
         while len(posts) < index: # Keeps scrolling down until the index of the post is found
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
-            WebDriverWait(driver, 100).until(EC.presence_of_element_located((By.XPATH, "//a[@tabindex='0']")))
-            links = driver.find_elements(By.XPATH, "//a[@tabindex='0']")
+            WebDriverWait(self.driver, 100).until(EC.presence_of_element_located((By.XPATH, "//a[@tabindex='0']")))
+            links = self.driver.find_elements(By.XPATH, "//a[@tabindex='0']")
             for a in links: # Adds non-duplicate links using a dictionary
                 link = a.get_attribute("href")
                 if "/p/" in link:
@@ -170,7 +158,7 @@ class Profile():
         Gets a random post from the account
         '''
 
-        n_posts = int(WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "g47SY "))).get_attribute("innerText").strip())
+        n_posts = int(WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "g47SY "))).get_attribute("innerText").strip())
         posts = self._load_profile(randrange(n_posts % 60)) # Makes sure the randrange does not exceed 60
 
         try:
@@ -191,7 +179,7 @@ class Profile():
         except IndexError:
             return 0
 
-def instagram_login(username, password):
+def login(username, password, chromedriver):
     '''
     Logs into instagram and save the cookies
 
@@ -207,7 +195,9 @@ def instagram_login(username, password):
     from selenium.webdriver.support import expected_conditions as EC
     import pickle
 
-    driver = webdriver.Chrome(executable_path=CHROMEDRIVER, options=opt)
+    opt = webdriver.ChromeOptions()
+    opt.add_experimental_option('excludeSwitches', ['enable-logging'])
+    driver = webdriver.Chrome(executable_path=chromedriver, options=opt)
     driver.get("https://www.instagram.com/")
 
     username_el = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[name='username']")))
@@ -224,9 +214,21 @@ def instagram_login(username, password):
     pickle.dump(driver.get_cookies() , open(r"cookies.pkl", "wb"))
     driver.close()
 
-if __name__ == "__main__":
-    instagram_login("something", "something")
-    
-    profile = Profile("tom holland")
-    post = profile.get_post(40)
-    print(post.media)
+def setup(chromedriver, headless = False):
+    opt = webdriver.ChromeOptions()
+    opt.add_experimental_option('excludeSwitches', ['enable-logging'])
+    if headless:
+        opt.add_argument("--headless")
+
+    driver = webdriver.Chrome(executable_path=chromedriver, options=opt)
+
+    if "cookies.pkl" in os.listdir():
+        cookies = pickle.load(open("cookies.pkl", "rb"))
+        for cookie in cookies:
+            driver.add_cookie(cookie)
+        driver.refresh()
+    else:
+        raise Exception("Call instagram_login function to get the necessary cookies")
+
+    driver.get("https://www.instagram.com/")
+    return driver
