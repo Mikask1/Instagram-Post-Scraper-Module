@@ -29,8 +29,14 @@ Uses selenium to scrape profiles that are accessible to the account
   driver = instagram.setup(CHROMEDRIVER)
 
   profile = instagram.Profile(query="tom holland", driver=driver)
+  
   post = profile.get_post(35)
   print(post.media)
+  
+  post = profile.get_random_post()
+  print(post.media)
+  
+  profile.download(start=23, end=30)
   ```
 
   ### Profile Class
