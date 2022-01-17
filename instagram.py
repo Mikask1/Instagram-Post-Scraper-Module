@@ -1,4 +1,5 @@
 # -- Instagram Module --
+import profile
 from random import choice, randrange
 import time
 import os
@@ -63,7 +64,7 @@ class Profile():
     def __init__(self, query, driver) -> None:
         self.link = None
         self.exist = 1
-        self.driver = self.driver
+        self.driver = driver
 
         if query[:26] == "https://www.instagram.com/":
             self.link = query
@@ -128,30 +129,31 @@ class Profile():
         5. Writes the byte stream onto a .jpg file
         """
         
-        PATH = "src/instagram/posts/"
+        PATH = "posts"
 
         posts = self._load_profile(end)[start-1:end]
 
         index = 1
+        total = len(posts)
         if PATH not in os.listdir():
             os.mkdir("posts")
         
         for post_url in posts:
             try:
+                print(f"Downloading [{index}/{total}]")
                 post = Post(url=post_url)
 
                 url = post.media
                 if not post.is_video:
-                    with open(PATH+str(index)+".jpg", "wb") as file:
+                    with open(f"{PATH}/{index}.jpg", "wb") as file:
                         file.write(requests.get(url).content)
                 else:
-                    with open(PATH+str(index)+".mp4", "wb") as file:
+                    with open(f"{PATH}/{index}.mp4", "wb") as file:
                         file.write(requests.get(url).content)
-
-                index += 1
             except Exception:
                 print(f"Error in {index}")
-                continue
+            finally:
+                index += 1
 
     def get_random_post(self) -> Post:
         '''
@@ -208,10 +210,10 @@ def login(username, password, chromedriver):
     password_el.send_keys(password)
 
     driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//button[contains(text(), 'Save Info')]"))).click()
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//button[contains(text(), 'Turn On')]"))).click()
+    WebDriverWait(driver, 100).until(EC.presence_of_element_located((By.XPATH, "//button[contains(text(), 'Save Info')]"))).click()
+    WebDriverWait(driver, 100).until(EC.presence_of_element_located((By.XPATH, "//button[contains(text(), 'Turn On')]"))).click()
 
-    pickle.dump(driver.get_cookies() , open(r"cookies.pkl", "wb"))
+    pickle.dump(driver.get_cookies() , open("cookies.pkl", "wb"))
     driver.close()
 
 def setup(chromedriver, headless = False):
@@ -221,6 +223,7 @@ def setup(chromedriver, headless = False):
         opt.add_argument("--headless")
 
     driver = webdriver.Chrome(executable_path=chromedriver, options=opt)
+    driver.get("https://www.instagram.com/")
 
     if "cookies.pkl" in os.listdir():
         cookies = pickle.load(open("cookies.pkl", "rb"))
@@ -230,5 +233,10 @@ def setup(chromedriver, headless = False):
     else:
         raise Exception("Call instagram_login function to get the necessary cookies")
 
-    driver.get("https://www.instagram.com/")
     return driver
+
+
+if __name__ == "__main__":
+    driver = setup(chromedriver="chromedriver.exe")
+    profile = Profile(query="real yami", driver=driver)
+    profile.download(start=1, end=2)
