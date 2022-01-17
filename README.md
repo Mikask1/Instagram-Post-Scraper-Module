@@ -25,7 +25,7 @@ Uses selenium to scrape profiles that are accessible to the account
 
   CHROMEDRIVER = "chromedriver.exe"
   instagram.login(username="username", password="pass", chromedriver=CHROMEDRIVER)
-  driver = instagram.setup(CHROMEDRIVER)
+  driver = instagram.setup(CHROMEDRIVER, headless=False)
 
   profile = instagram.Profile(query="tom holland", driver=driver)
   
