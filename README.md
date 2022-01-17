@@ -13,12 +13,11 @@ Uses selenium to scrape profiles that are accessible to the account
   ### Download a chromedriver
   - Go to https://chromedriver.chromium.org/downloads
   - Download the chromedriver that is compatible with your Chrome browser
-  - Set the `CHROMEDRIVER` variable to the path of your `chromedriver.exe`
 
 ## Documentation
   ### Introduction
   - Call the `login` function if you don't have the `cookies.pkl` file
-  - Call the `setup` function
+  - Call the `setup` function to setup your chrome driver
 
   ### Quick Example
   ```py
