@@ -111,7 +111,8 @@ class Profile():
         
         links = []
         while len(posts) < index: # Keeps scrolling down until the index of the post is found
-            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            if index > 12:
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
             WebDriverWait(self.driver, 100).until(EC.presence_of_element_located((By.XPATH, "//a[@tabindex='0']")))
             links = self.driver.find_elements(By.XPATH, "//a[@tabindex='0']")
