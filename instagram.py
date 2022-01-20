@@ -1,5 +1,4 @@
 # -- Instagram Module --
-import profile
 from random import choice, randrange
 import time
 import os
@@ -20,30 +19,40 @@ class Post():
     Post{
         media       : url
         caption     : str
-        upload_date : str
-        is_video    : bool
+        upload date : str
     }
     '''
+
+    class Media():
+        def __init__(self, container):
+            media_type_dct = {1: "image", 2: "video"}
+            self.media_type = media_type_dct[container["media_type"]]
+            
+            if self.media_type == "image":
+                self.url = container["image_versions2"]["candidates"][0]["url"]
+            elif self.media_type == "video":
+                self.url = container["video_versions"][0]["url"]
 
     def __init__(self, url) -> None:
         self.url = url
         url += "?__a=1"
-        container = json.loads(requests.get(url).text)["graphql"]["shortcode_media"]
 
-        self.is_video = container["is_video"]
-        if self.is_video:
-            self.media = container["video_url"]
+        request = session.get(url).text
+
+        container = json.loads(request)["items"][0]
+        unix = container["taken_at"]
+        self.upload_date = datetime.utcfromtimestamp(unix).strftime('%d %B %Y %H:%M:%S')
+
+        self.is_carousel = True if container["media_type"] == 8 else False
+
+        if self.is_carousel:
+            self.media = []
+            for item in container["carousel_media"]:
+                self.media.append(self.Media(item))
         else:
-            self.media = container["display_resources"][-1]["src"]
+            self.media = self.Media(container)
 
-        caption_container = container["edge_media_to_caption"]["edges"]
-        if caption_container:
-            self.caption = caption_container[0]["node"]["text"]
-        else:
-            self.caption = "."
-
-        self.unix = container["taken_at_timestamp"]
-        self.upload_date = datetime.utcfromtimestamp(self.unix).strftime('%d %B %Y %H:%M:%S')
+        self.caption = container["caption"]["text"] if container["caption"] else None
         
 class Profile():
     '''
@@ -61,7 +70,7 @@ class Profile():
     download : Downloads posts in a range
     '''
 
-    def __init__(self, query, driver) -> None:
+    def __init__(self, query) -> None:
         self.link = None
         self.exist = 1
         self.driver = driver
@@ -141,15 +150,26 @@ class Profile():
         for post_url in posts:
             try:
                 print(f"Downloading [{index}/{total}]")
+
                 post = Post(url=post_url)
 
-                url = post.media
-                if not post.is_video:
-                    with open(f"{PATH}/{index}.jpg", "wb") as file:
-                        file.write(requests.get(url).content)
+                if post.is_carousel:
+                    for n, media in enumerate(post.media, start=1):
+                        url = media.url
+                        if media.media_type == "image":
+                            with open(f"{PATH}/{index}_{n}.jpg", "wb") as file:
+                                file.write(requests.get(url).content)
+                        else:
+                            with open(f"{PATH}/{index}_{n}.mp4", "wb") as file:
+                                file.write(requests.get(url).content)
                 else:
-                    with open(f"{PATH}/{index}.mp4", "wb") as file:
-                        file.write(requests.get(url).content)
+                    url = post.media.url
+                    if post.media.media_type == "image":
+                        with open(f"{PATH}/{index}.jpg", "wb") as file:
+                            file.write(requests.get(url).content)
+                    else:
+                        with open(f"{PATH}/{index}.mp4", "wb") as file:
+                            file.write(requests.get(url).content)
             except Exception:
                 print(f"Error in {index}")
             finally:
@@ -217,6 +237,7 @@ def login(username, password, chromedriver):
     driver.close()
 
 def setup(chromedriver, headless = False):
+    global driver, session
     opt = webdriver.ChromeOptions()
     opt.add_experimental_option('excludeSwitches', ['enable-logging'])
     if headless:
@@ -224,19 +245,19 @@ def setup(chromedriver, headless = False):
 
     driver = webdriver.Chrome(executable_path=chromedriver, options=opt)
     driver.get("https://www.instagram.com/")
-
+    
+    session = requests.Session()
     if "cookies.pkl" in os.listdir():
         cookies = pickle.load(open("cookies.pkl", "rb"))
         for cookie in cookies:
             driver.add_cookie(cookie)
+        for cookie in cookies:
+            session.cookies.set(cookie['name'], cookie['value'])
         driver.refresh()
     else:
         raise Exception("Call instagram_login function to get the necessary cookies")
 
-    return driver
-
-
 if __name__ == "__main__":
-    driver = setup(chromedriver="chromedriver.exe")
-    profile = Profile(query="real yami", driver=driver)
-    profile.download(start=1, end=2)
+    setup(chromedriver="chromedriver.exe")
+    tom = Profile(query="tom holland")
+    tom.download(start=1, end=6)
