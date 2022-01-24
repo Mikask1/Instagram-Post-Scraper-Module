@@ -58,7 +58,7 @@ Uses selenium to scrape profiles that are accessible to the account
     ```
 
   ### Post Object
-  - This is a Value object containing various attributes that an instagram post has.
+  - This is a data class containing various attributes that an instagram post has.
     #### Attributes
     ```
     media           : Post.Media
