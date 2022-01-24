@@ -27,9 +27,9 @@ Uses selenium to scrape profiles that are accessible to the account
   
   # if you've never logged in before
   instagram.login(username="username", password="pass", chromedriver=CHROMEDRIVER)
+  instagram.setup(CHROMEDRIVER, headless=False)
   
-  driver = instagram.setup(CHROMEDRIVER, headless=False)
-  profile = instagram.Profile(query="tom holland", driver=driver)
+  profile = instagram.Profile("tom holland")
   
   post = profile.get_post(35)
   print(post.media)
@@ -40,15 +40,15 @@ Uses selenium to scrape profiles that are accessible to the account
   profile.download(start=23, end=30)
   ```
 
-  ### Profile Class
+  ### Profile Object
   - Takes a query and a driver parameter
   - Searches up the account you're looking for
 
     #### Attributes
     ```
-    username    : str
-    link        : url
-    driver      : Selenium Driver
+    username        : str
+    link            : url
+    driver          : Selenium Driver
     ```
     #### Methods
     ```
@@ -57,15 +57,24 @@ Uses selenium to scrape profiles that are accessible to the account
     download : Downloads posts in a range
     ```
 
-  ### Post Class
+  ### Post Object
+  - This is a Value object containing various attributes that an instagram post has.
     #### Attributes
     ```
-    media       : url
-    caption     : str
-    upload_date : str
-    is_video    : bool
+    media           : Post.Media
+    caption         : str
+    upload_date     : str
+    is_carousel     : bool
+    url             : str
     ```
-
+    
+    #### Post.Media Object
+     ##### Attributes
+     ```
+     url            : str
+     media_type     : str
+     ```
+    
   ### Login Function
   Logs into account saves the cookies to `cookies.pkl`
 
