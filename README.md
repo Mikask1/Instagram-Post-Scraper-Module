@@ -61,7 +61,7 @@ Uses selenium to scrape profiles that are accessible to the account
   - This is a data class containing various attributes that an instagram post has.
     #### Attributes
     ```
-    media           : Post.Media
+    media           : Post.Media OR List
     caption         : str
     upload_date     : str
     is_carousel     : bool
